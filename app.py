@@ -319,5 +319,40 @@ def delete_order(order_id):
             conn.close()
 
 
+
+class ProductSchema(ma.Schema):
+    product_id = fields.Int(dump_only=True)
+    name = fields.String(required=True)
+    price = fields.Float(required=True)
+    stock = fields.Int(required=True)
+
+    class Meta:
+        fields = ("product_id", "name", "price", "stock")
+
+product_schema = ProductSchema()
+products_schema = ProductSchema(many=True)
+
+@app.route("/products", methods=["GET"])
+def get_products():
+    try:
+        conn = connect_db()
+        if conn is None:
+            return jsonify({"message": "Database connection failed"}), 500
+        
+        cursor = conn.cursor(dictionary=True)
+        query = "SELECT * FROM Products"
+        cursor.execute(query)
+        products = cursor.fetchall()
+        return products_schema.jsonify(products)
+    except Error as e:
+        return jsonify({"error": "Internal Server Error"}), 500
+    finally:
+        if conn and conn.is_connected():
+            cursor.close()
+            conn.close()
+
+
+
+
 if __name__ == "__main__":
     app.run(debug=True)
